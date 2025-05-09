@@ -1,13 +1,24 @@
 pipeline {
   agent any
+
   stages {
-    stage('Build') {
-     agent {
-        docker { image 'django:latest' }
-      }
+    stage('Build & Deploy') {
       steps {
-        sh 'python3 manage.py runserver 0.0.0.0:8000'
+        // 1) Build the Docker image tagged "todo"
+        sh 'docker build -t todo .'
+
+        // 2) Remove any old container named "todo-app" (ignore errors)
+        sh 'docker rm -f todo-app || true'
+
+        // 3) Run the new container, mapping host port 9001 → container port 8000
+        sh 'docker run -d --name todo-app -p 9001:8000 todo'
       }
     }
-}
+  }
+
+  post {
+    always {
+      cleanWs()
+    }
+  }
 }
